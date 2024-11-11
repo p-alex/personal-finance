@@ -1,0 +1,16 @@
+{
+  "name": "personal-finance",
+  "version": "1.0.0",
+  "private": true,
+  "license": "ISC",
+  "workspaces": [
+    "packages/server"
+  ],
+  "devDependencies": {
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10"
+  },
+  "scripts": {
+    "prepare": "husky"
+  }
+}
