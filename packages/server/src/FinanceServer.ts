@@ -15,8 +15,31 @@ class FinanceServer {
     this._setup();
   }
 
+  private _applyCors(req: IncomingMessage, res: ServerResponse) {
+    const corsOptions = {
+      origin: env.clientBaseUrl,
+      methods: "GET,POST,PUT,DELETE,OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
+      allowCredentials: "true",
+    };
+
+    res.setHeader("Access-Control-Allow-Origin", corsOptions.origin);
+    res.setHeader("Access-Control-Allow-Methods", corsOptions.methods);
+    res.setHeader("Access-Control-Allow-Headers", corsOptions.allowedHeaders);
+    res.setHeader("Access-Control-Allow-Credentials", corsOptions.allowCredentials);
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(200);
+      res.end();
+      return true;
+    }
+
+    return false;
+  }
+
   private _setup() {
     this._server = createServer((req: IncomingMessage, res: ServerResponse) => {
+      this._applyCors(req, res);
       this._setupRouterManager(req, res);
     });
   }
