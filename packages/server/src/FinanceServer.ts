@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse, Server } from "node:http";
 import RouterManager from "./RouterManager";
-import env from "./config/env";
 import PingRouter from "./ping/ping.router";
+import { ENV } from ".";
 
 class FinanceServer {
   private _server: Server | null;
@@ -17,7 +17,7 @@ class FinanceServer {
 
   private _applyCors(req: IncomingMessage, res: ServerResponse) {
     const corsOptions = {
-      origin: env.clientBaseUrl,
+      origin: ENV.CLIENT_BASE_URL,
       methods: "GET,POST,PUT,DELETE,OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       allowCredentials: "true",
@@ -75,8 +75,8 @@ class FinanceServer {
 
   start() {
     if (this._server === null) return console.log("Server failed to start");
-    this._server.listen(env.port, () =>
-      console.log("🚀 Server running at http://localhost:" + env.port),
+    this._server.listen(ENV.PORT, () =>
+      console.log("🚀 Server running at http://localhost:" + ENV.PORT),
     );
   }
 }
