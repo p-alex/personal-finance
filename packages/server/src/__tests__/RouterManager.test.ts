@@ -43,7 +43,7 @@ describe("RouterManager.ts", () => {
   it("should not extract the body if is GET method", () => {
     routerManager.useRouters(mockReq, mockRes);
 
-    expect(mockReq.body).toBe(undefined);
+    expect(mockReq.body).not.toBeDefined();
   });
 
   it("should extract the body if it anything other than a GET request", () => {

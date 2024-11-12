@@ -42,7 +42,6 @@ class RouterManager {
       try {
         await this.routers[validRoute].useRouter(req, res);
       } catch (error) {
-        console.error(error);
         res.statusCode = 500;
         res.end(
           JSON.stringify(
@@ -74,8 +73,12 @@ class RouterManager {
   }
 
   private extractBody(data: string, method: string) {
-    if (/get/i.test(method)) return undefined;
-    return JSON.parse(data);
+    if (/get/i.test(method)) return null;
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      return null;
+    }
   }
 }
 
