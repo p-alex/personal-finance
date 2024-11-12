@@ -18,9 +18,7 @@ class PingRouter implements IRouter {
       }
     }
     res.statusCode = 404;
-    res.end(
-      JSON.stringify(GenerateResponse.error(404, "Route does not exist"))
-    );
+    res.end(JSON.stringify(GenerateResponse.error(404, "Route does not exist")));
   }
 }
 

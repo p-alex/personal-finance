@@ -1,9 +1,4 @@
-import {
-  createServer,
-  IncomingMessage,
-  ServerResponse,
-  Server,
-} from "node:http";
+import { createServer, IncomingMessage, ServerResponse, Server } from "node:http";
 import RouterManager from "./RouterManager";
 import env from "./config/env";
 import PingRouter from "./ping/ping.router";
@@ -34,7 +29,7 @@ class FinanceServer {
   start() {
     if (this._server === null) return console.log("Server failed to start");
     this._server.listen(env.port, () =>
-      console.log("🚀 Server running at http://localhost:" + env.port)
+      console.log("🚀 Server running at http://localhost:" + env.port),
     );
   }
 }

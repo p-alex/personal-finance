@@ -46,11 +46,8 @@ class RouterManager {
         res.statusCode = 500;
         res.end(
           JSON.stringify(
-            GenerateResponse.error(
-              500,
-              "Something went wrong. Please try again later."
-            )
-          )
+            GenerateResponse.error(500, "Something went wrong. Please try again later."),
+          ),
         );
       }
     });
@@ -61,8 +58,7 @@ class RouterManager {
     validRoute: string | null;
     code: number;
   } {
-    if (!url)
-      return { message: "No url provided", validRoute: null, code: 400 };
+    if (!url) return { message: "No url provided", validRoute: null, code: 400 };
 
     const route = url.substring(1).split("/")[0];
 

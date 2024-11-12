@@ -33,13 +33,8 @@ describe("ping.router.test.ts", () => {
     mockReq.emit("end");
 
     expect(mockRes.statusCode).toBe(200);
-    expect(mockRes.setHeader).toHaveBeenCalledWith(
-      "Content-Type",
-      "application/json"
-    );
-    expect(mockRes.end).toHaveBeenCalledWith(
-      JSON.stringify(GenerateResponse.success(200, "pong"))
-    );
+    expect(mockRes.setHeader).toHaveBeenCalledWith("Content-Type", "application/json");
+    expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify(GenerateResponse.success(200, "pong")));
   });
 
   it("should handle a request to an unknown route successfully", async () => {
@@ -51,7 +46,7 @@ describe("ping.router.test.ts", () => {
 
     expect(mockRes.statusCode).toBe(404);
     expect(mockRes.end).toHaveBeenCalledWith(
-      JSON.stringify(GenerateResponse.error(404, "Route does not exist"))
+      JSON.stringify(GenerateResponse.error(404, "Route does not exist")),
     );
   });
 });

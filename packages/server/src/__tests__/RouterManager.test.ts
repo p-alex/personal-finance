@@ -87,12 +87,7 @@ describe("RouterManager.ts", () => {
 
     expect(mockRes.statusCode).toBe(500);
     expect(mockRes.end).toHaveBeenCalledWith(
-      JSON.stringify(
-        GenerateResponse.error(
-          500,
-          "Something went wrong. Please try again later."
-        )
-      )
+      JSON.stringify(GenerateResponse.error(500, "Something went wrong. Please try again later.")),
     );
   });
 });
