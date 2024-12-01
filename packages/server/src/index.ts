@@ -1,12 +1,10 @@
-import Dotenv from "./utils/Dotenv";
+import { ENV } from "./config/env";
+import pingController from "./ping";
+import adaptToVanillaNode from "./utils/adaptToVanillaNode";
+import App from "./App";
 
-const dotenv = new Dotenv();
-dotenv.config();
+const app = new App();
 
-export const ENV = dotenv.getVars();
+app.get("/ping", adaptToVanillaNode(pingController.ping));
 
-import FinanceServer from "./FinanceServer";
-
-const financeServer = new FinanceServer();
-
-financeServer.start();
+app.listen(ENV.PORT, () => console.log("Server started at http://localhost:" + ENV.PORT));

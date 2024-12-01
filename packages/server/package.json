@@ -6,7 +6,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
     "test": "jest --passWithNoTests",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --watch",
     "test:watch": "jest --watch",
     "pre-commit": "lint-staged",
     "format": "prettier --write ./src"
