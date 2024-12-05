@@ -4,10 +4,17 @@ import parseRoute from "./utils/parseRoute";
 import extractParams from "./utils/extractParams";
 import getCorsHeaders from "./utils/getCorsHeaders";
 import getSecurityHeaders from "./utils/getSecurityHeaders";
+import { NotFoundException } from "./exceptions";
+import Exception from "./exceptions/Exception";
 
-export type Request = IncomingMessage;
+export interface Request extends IncomingMessage {
+  body: any;
+  params: Record<string, string>;
+}
 
-export type Response = ServerResponse;
+export interface Response extends ServerResponse {
+  statusCode: number;
+}
 
 export type NextFunction = () => Promise<void>;
 
@@ -22,19 +29,29 @@ export type Route = {
 };
 
 export interface IServer {
+  get(path: string, ...middlewares: Middleware[]): void;
+  post(path: string, ...middlewares: Middleware[]): void;
+  put(path: string, ...middlewares: Middleware[]): void;
+  patch(path: string, ...middlewares: Middleware[]): void;
+  delete(path: string, ...middlewares: Middleware[]): void;
   listen(port: string, cb: () => void): void;
-  handleRequest(req: Request, res: Response): void;
+  handleRequests(req: Request, res: Response): void;
+  processRequest(req: Request, res: Response, data: string): Promise<void>;
 }
 
 class App implements IServer {
   private readonly _routes: Route[];
-  private readonly _serverImpl: Server;
+  private readonly _server: Server;
 
   constructor() {
     this._routes = [];
-    this._serverImpl = createServer((req, res) => {
-      this.applyHeaders(res, [...getCorsHeaders(), ...getSecurityHeaders()]);
-      this.handleRequest(req as Request, res as Response);
+    this._server = createServer((req, res) => {
+      this._applyHeaders(res, [
+        ...getCorsHeaders(),
+        ...getSecurityHeaders(),
+        ["Content-Type", "application/json"],
+      ]);
+      this.handleRequests(req as Request, res as Response);
     });
   }
 
@@ -71,13 +88,15 @@ class App implements IServer {
     if (!req.method || !req.url) throw new Error("Invalid request");
 
     if (req.method === "OPTIONS") {
+      res.statusCode = 200;
+      res.end();
       return;
     }
 
     const route = this._routes.find((r) => r.method === req.method && r.pathRegex.test(req.url!));
 
     if (!route) {
-      throw new Error("Route not found");
+      throw new NotFoundException("Route not found");
     }
 
     req.params = extractParams(route.path, req.url);
@@ -95,7 +114,15 @@ class App implements IServer {
     await next();
   }
 
-  handleRequest(req: Request, res: Response) {
+  listen(port: string, cb: () => void) {
+    this._server.listen(port, cb);
+  }
+
+  private _applyHeaders(res: Response, headers: string[][]) {
+    headers.forEach((header) => res.setHeader(header[0], header[1]));
+  }
+
+  handleRequests(req: Request, res: Response) {
     let data = "";
 
     req.on("data", (chunk) => (data += chunk));
@@ -103,26 +130,20 @@ class App implements IServer {
     req.on("end", async () => {
       try {
         await this.processRequest(req, res, data);
-
-        if (req.method === "OPTIONS") {
-          res.statusCode = 200;
-          res.end();
+      } catch (error: any) {
+        if (error instanceof Exception) {
+          res.statusCode = error.code;
+          res.end(JSON.stringify(GenerateResponse.error(error.code, error.message)));
           return;
         }
-      } catch (error: any) {
-        const statusCode = error.message === "Route not found" ? 404 : 500;
-        res.writeHead(statusCode, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(GenerateResponse.error(statusCode, error.message)));
+        res.statusCode = 500;
+        res.end(
+          JSON.stringify(
+            GenerateResponse.error(500, "Something went wrong, please try again later."),
+          ),
+        );
       }
     });
-  }
-
-  listen(port: string, cb: () => void) {
-    this._serverImpl.listen(port, cb);
-  }
-
-  applyHeaders(res: Response, headers: string[][]) {
-    headers.forEach((header) => res.setHeader(header[0], header[1]));
   }
 }
 

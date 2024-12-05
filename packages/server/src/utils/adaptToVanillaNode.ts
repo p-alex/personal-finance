@@ -1,4 +1,5 @@
 import { Request, Response } from "../App";
+import Exception from "../exceptions/Exception";
 import GenerateResponse from "../GenerateResponse";
 import IHttpRequest from "../interfaces/IHttpRequest";
 import IHttpResponse from "../interfaces/IHttpResponse";
@@ -8,13 +9,20 @@ function adaptToVanillaNode(controller: (httpRequest: IHttpRequest) => Promise<I
     try {
       const result = await controller({ body: req.body, params: req.params });
       res.statusCode = result.code;
-      res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(result));
     } catch (error) {
-      console.error(error);
+      if (error instanceof Exception) {
+        res.statusCode = error.code;
+        res.end(JSON.stringify(GenerateResponse.error(error.code, error.message)));
+        return;
+      }
+
       res.statusCode = 500;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(GenerateResponse.error(500, "Something went wrong!")));
+      res.end(
+        JSON.stringify(
+          GenerateResponse.error(500, "Something went wrong, please try again later."),
+        ),
+      );
     }
   };
 }

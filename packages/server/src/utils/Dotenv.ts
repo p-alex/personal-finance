@@ -11,11 +11,11 @@ class Dotenv {
 
   constructor(private readonly _envFileName: string = ".env") {
     this._envVariables = {} as IEnv;
-    this.config = this.config.bind(this);
   }
 
   config() {
     const envFilePath = this._checkIfEnvFileExists();
+    if (!envFilePath) return {};
     this._setEnvVariables(envFilePath);
   }
 
@@ -25,7 +25,7 @@ class Dotenv {
 
   private _checkIfEnvFileExists() {
     const envFilePath = path.resolve(this._envFileName);
-    if (!fs.existsSync(envFilePath)) throw new Error(".env file does not exist");
+    if (!fs.existsSync(envFilePath)) return null;
     return envFilePath;
   }
 

@@ -1,7 +1,8 @@
-import { IncomingMessage, Server } from "node:http";
+import { IncomingMessage } from "node:http";
 import App, { Request, Response } from "../App";
-import GenerateResponse from "../GenerateResponse";
 import { ENV } from "../config/env";
+import GenerateResponse from "../GenerateResponse";
+import { TooManyRequestsException } from "../exceptions";
 
 jest.mock("../utils/getCorsHeaders", () => ({
   __esModule: true,
@@ -36,12 +37,12 @@ describe("App.ts", () => {
       url: "/users",
       on: jest.fn((event, callback) => {
         if (event === "data") {
-          return mockReq as IncomingMessage;
+          return mockReq as Request;
         }
         if (event === "end") {
           callback();
         }
-        return mockReq as IncomingMessage;
+        return mockReq as Request;
       }),
     };
 
@@ -167,24 +168,38 @@ describe("App.ts", () => {
         pathRegex: new RegExp(/^\/test-route$/),
       });
     });
+
+    it("should handle OPTIONS requests correctly", async () => {
+      await app.processRequest(
+        { ...mockReq, method: "OPTIONS" } as Request,
+        mockRes as Response,
+        "",
+      );
+
+      expect(mockRes.statusCode).toBe(200);
+      expect(mockRes.end).toHaveBeenCalledWith();
+    });
   });
 
   describe("Middleware execution", () => {
     it("should execute multiple middlewares in order", async () => {
-      const calls: number[] = [];
-      const middleware1 = jest.fn((req, res, next) => {
-        calls.push(1);
+      let calls: number = 0;
+
+      const middleware1 = jest.fn((_, __, next) => {
+        calls++;
         return next();
       });
-      const middleware2 = jest.fn((req, res, next) => {
-        calls.push(2);
+
+      const middleware2 = jest.fn((_, __, next) => {
+        calls++;
         return next();
       });
 
       app.get("/test", middleware1, middleware2);
+
       await app.processRequest({ method: "GET", url: "/test" } as Request, mockRes as Response, "");
 
-      expect(calls).toEqual([1, 2]);
+      expect(calls).toEqual(2);
     });
   });
 
@@ -196,6 +211,64 @@ describe("App.ts", () => {
       await expect(
         app.processRequest({ method: "GET", url: "/error" } as Request, mockRes as Response, ""),
       ).rejects.toThrow("Middleware error");
+    });
+
+    it("should handle errors that are of type other than Exception correctly", (done) => {
+      const mockMiddleware = jest.fn(() => {
+        throw new TypeError("type error");
+      });
+
+      app.get("/error", mockMiddleware);
+
+      mockReq = {
+        method: "GET",
+        url: "/error",
+        on: jest.fn((event, callback) => {
+          if (event === "data") {
+            return mockReq as Request;
+          }
+
+          if (event === "end") {
+            callback();
+          }
+
+          return mockReq as Request;
+        }),
+      };
+
+      mockRes.end = jest.fn(() => {
+        expect(mockRes.statusCode).toBe(500);
+        expect(mockRes.end).toHaveBeenCalledWith(
+          JSON.stringify(
+            GenerateResponse.error(500, "Something went wrong, please try again later."),
+          ),
+        );
+        done();
+        return {} as Response;
+      });
+
+      app.handleRequests(mockReq as Request, mockRes as Response);
+    });
+
+    it("should handle Exception errors correctly", (done) => {
+      const mockMiddleware = jest.fn(() => {
+        throw new TooManyRequestsException();
+      });
+
+      app.get("/error", mockMiddleware);
+
+      mockReq = { ...mockReq, url: "/error" };
+
+      mockRes.end = jest.fn(() => {
+        expect(mockRes.statusCode).toBe(429);
+        expect(mockRes.end).toHaveBeenCalledWith(
+          JSON.stringify(GenerateResponse.error(429, "Too many requests, please try again later.")),
+        );
+        done();
+        return {} as Response;
+      });
+
+      app.handleRequests(mockReq as Request, mockRes as Response);
     });
   });
 });

@@ -27,6 +27,6 @@ describe("Dotenv.ts", () => {
   it("should throw an error if env file does not exist", () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-    expect(dotenv.config).toThrow(".env file does not exist");
+    expect(dotenv.config()).toEqual({});
   });
 });

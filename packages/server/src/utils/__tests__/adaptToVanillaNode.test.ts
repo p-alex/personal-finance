@@ -1,6 +1,7 @@
 import { Request, Response } from "../../App";
 import adaptToVanillaNode from "../adaptToVanillaNode";
 import GenerateResponse from "../../GenerateResponse";
+import { TooManyRequestsException } from "../../exceptions";
 
 describe("adaptToVanillaNode", () => {
   let mockReq: Partial<Request>;
@@ -14,7 +15,6 @@ describe("adaptToVanillaNode", () => {
 
     mockRes = {
       statusCode: 200,
-      setHeader: jest.fn(),
       end: jest.fn(),
     };
   });
@@ -31,7 +31,6 @@ describe("adaptToVanillaNode", () => {
       params: mockReq.params,
     });
     expect(mockRes.statusCode).toBe(200);
-    expect(mockRes.setHeader).toHaveBeenCalledWith("Content-Type", "application/json");
     expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify(successResponse));
   });
 
@@ -47,9 +46,8 @@ describe("adaptToVanillaNode", () => {
       params: mockReq.params,
     });
     expect(mockRes.statusCode).toBe(500);
-    expect(mockRes.setHeader).toHaveBeenCalledWith("Content-Type", "application/json");
     expect(mockRes.end).toHaveBeenCalledWith(
-      JSON.stringify(GenerateResponse.error(500, "Something went wrong!")),
+      JSON.stringify(GenerateResponse.error(500, "Something went wrong, please try again later.")),
     );
   });
 
@@ -62,5 +60,20 @@ describe("adaptToVanillaNode", () => {
 
     expect(mockRes.statusCode).toBe(201);
     expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify(createdResponse));
+  });
+
+  it("should handle exceptions correctly", async () => {
+    const mockController = jest.fn(() => {
+      throw new TooManyRequestsException();
+    });
+
+    const handler = adaptToVanillaNode(mockController);
+
+    await handler(mockReq as Request, mockRes as Response);
+
+    expect(mockRes.statusCode).toBe(429);
+    expect(mockRes.end).toHaveBeenCalledWith(
+      JSON.stringify(GenerateResponse.error(429, "Too many requests, please try again later.")),
+    );
   });
 });
